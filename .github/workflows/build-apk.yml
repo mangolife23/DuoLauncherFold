@@ -1,0 +1,42 @@
+name: Build DuoLauncher APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout this repository
+        uses: actions/checkout@v4
+
+      - name: Fetch upstream DuoLauncher source
+        run: |
+          git clone --depth 1 https://github.com/jakesgoodapps/DuoLauncher.git upstream
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+          cache-dependency-path: upstream/**/*.gradle*
+
+      - name: Build debug APK
+        working-directory: upstream
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon :app:assembleDebug
+
+      - name: Upload installable APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: DuoLauncherFold-debug-apk
+          path: upstream/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 30
